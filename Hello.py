@@ -1,14 +1,16 @@
 import io
 import streamlit as st
 import pandas as pd
-import numpy as np
+import plotly.express as px
 import chardet
 import plotly.express as px
 from sklearn.cluster import KMeans
 from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 import plotly.graph_objs as go
 from streamlit.logger import get_logger
+import base64
 
 LOGGER = get_logger(__name__)
 df_cluster = None
@@ -20,7 +22,6 @@ n = 1
 def read_csv_with_file_uploader():
     # Create a file uploader widget
     uploaded_file = st.file_uploader("Upload your CSV file", type=['csv'])
-
     if uploaded_file is not None:
         # To read file as bytes:
         bytes_data = uploaded_file.getvalue()
@@ -32,7 +33,9 @@ def read_csv_with_file_uploader():
         df = pd.read_csv(stringio)
         return df
 
+
 def input_file(data_file, n, radio_selection, df_cluster):
+    global df
     global selected_columns_list
     data_file = read_csv_with_file_uploader()
     if data_file is not None:
@@ -43,6 +46,9 @@ def input_file(data_file, n, radio_selection, df_cluster):
         if selected_columns:
             df_cluster = pd.DataFrame(df[selected_columns])
             st.dataframe(df_cluster)
+            # scaler = MinMaxScaler()
+            # df_cluster[selected_columns_list] = scaler.fit_transform(df_cluster[selected_columns_list])
+            # st.dataframe(df_cluster)
             Elbow(df_cluster)
             if radio_selection == 'K-MEANS':
                 n = int(st.number_input('Nhập số cụm', min_value=2, key=int))
@@ -53,10 +59,9 @@ def input_file(data_file, n, radio_selection, df_cluster):
     return df_cluster
 
 def export_clustered_data():
-    global df_cluster
-
-    if df_cluster is not None:
-        data = df_cluster.sort_values('Cluster')
+    global df
+    if df is not None:
+        data = df.sort_values('Cluster')
         output_filename = 'clustered_data.csv'
         data_csv = data.to_csv(index=False)
         if data_csv:
@@ -68,6 +73,8 @@ def export_clustered_data():
             st.write('No data to export.')
 
 def runKmean(df_cluster, n):
+    st.title('Biểu đồ phân cụm')
+    global df
     global selected_columns_list
     if df_cluster is not None:
         kmeans = KMeans(
@@ -75,6 +82,7 @@ def runKmean(df_cluster, n):
         )
         clusters = kmeans.fit_predict(df_cluster)
         df_cluster['Cluster'] = kmeans.labels_
+        df['Cluster'] = kmeans.labels_
         centroids = kmeans.cluster_centers_
         if len(selected_columns_list) > 2 :
             # Create a 3D scatter plot of the clusters
@@ -91,7 +99,7 @@ def runKmean(df_cluster, n):
                     y=cluster_df[selected_columns_list[1]],
                     z=cluster_df[selected_columns_list[2]],
                     mode='markers',
-                    marker=dict(size=5, color=colors[i % len(colors)]),
+                    marker=dict(size=3, color=colors[i % len(colors)]),
                     name=f'Cluster {i}'
                 ))
 
@@ -112,7 +120,7 @@ def runKmean(df_cluster, n):
                 y=centroids[:, 1],
                 z=centroids[:, 2],
                 mode='markers',
-                marker=dict(size=10, color='black'),
+                marker=dict(size=6, color='black'),
                 name='Centroids'
             ))
 
@@ -163,6 +171,7 @@ def runDbScan(df_cluster):
     min_samples = st.slider('Chọn giá trị min_samples', min_value=1, max_value=200, value=5, step=1)
     dbscan = DBSCAN(eps=eps, min_samples=min_samples)
     clusters = dbscan.fit_predict(df_cluster)
+    df['Cluster'] = dbscan.labels_
     df_cluster['Cluster'] = dbscan.labels_
     plt.figure(figsize=(10, 6))
     plt.scatter(
@@ -183,6 +192,7 @@ def runDbScan(df_cluster):
     return df_cluster
 
 def Elbow(df_cluster):
+    st.title('Chọn số cụm tối ưu bằng phương pháp Elbow')
     wcss = []
     for i in range(1, 11):
         kmeans = KMeans(n_clusters=i, init='k-means++', random_state=42)
@@ -215,6 +225,7 @@ def run():
     df_cluster = input_file(data_file, n, radio_selection, df_cluster)
     export_clustered_data()
 
+print('Running main func...')
 # running main func
 if __name__ == '__main__':
     run()
