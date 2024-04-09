@@ -10,7 +10,7 @@ from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 import plotly.graph_objs as go
 from streamlit.logger import get_logger
-import base64
+from sklearn.metrics import silhouette_score
 
 LOGGER = get_logger(__name__)
 df_cluster = None
@@ -55,11 +55,10 @@ def input_file(data_file, n, radio_selection, df_cluster):
                 df_cluster = runKmean(df_cluster, n)
             else:
                 df_cluster = runDbScan(df_cluster)
-
+            df['Cluster'] = df_cluster['Cluster']
     return df_cluster
 
 def export_clustered_data():
-    global df
     if df is not None:
         data = df.sort_values('Cluster')
         output_filename = 'clustered_data.csv'
@@ -74,7 +73,6 @@ def export_clustered_data():
 
 def runKmean(df_cluster, n):
     st.title('Biểu đồ phân cụm')
-    global df
     global selected_columns_list
     if df_cluster is not None:
         kmeans = KMeans(
@@ -82,7 +80,6 @@ def runKmean(df_cluster, n):
         )
         clusters = kmeans.fit_predict(df_cluster)
         df_cluster['Cluster'] = kmeans.labels_
-        df['Cluster'] = kmeans.labels_
         centroids = kmeans.cluster_centers_
         if len(selected_columns_list) > 2 :
             # Create a 3D scatter plot of the clusters
