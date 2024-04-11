@@ -11,7 +11,7 @@ from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 import plotly.graph_objs as go
 from streamlit.logger import get_logger
-from sklearn.metrics import silhouette_score
+
 
 LOGGER = get_logger(__name__)
 df_cluster = None
@@ -40,12 +40,11 @@ def input_file(data_file, n, radio_selection, df_cluster):
     global selected_columns_list
     data_file = read_csv_with_file_uploader()
     if data_file is not None:
-        # df = data_file.dropna()
-        # st.dataframe(df)
+        df = data_file.dropna()
         st.dataframe(data_file)
         st.write('Tổng quan dữ liệu:')
         st.dataframe(data_file.describe())
-        df = data_file.dropna()
+
         selected_columns = st.multiselect('Lựa chọn dữ liệu phân cụm:', df.columns.to_list())
         if len(selected_columns) >= 4:
             st.error('Chỉ lựa chọn tối đa 3 cột dữ liệu để phân cụm.')
@@ -54,9 +53,7 @@ def input_file(data_file, n, radio_selection, df_cluster):
         if selected_columns:
             df_cluster = pd.DataFrame(df[selected_columns])
             st.dataframe(df_cluster)
-            # scaler = MinMaxScaler()
-            # df_cluster[selected_columns_list] = scaler.fit_transform(df_cluster[selected_columns_list])
-            # st.dataframe(df_cluster)
+
             Elbow(df_cluster)
             if radio_selection == 'K-MEANS':
                 n = int(st.number_input('Nhập số cụm', min_value=2, key=int))
@@ -146,7 +143,7 @@ def runKmean(df_cluster, n):
             st.plotly_chart(fig)
             st.write('Số lượng điểm dữ liệu trong mỗi cụm:', cluster_counts)
         else:
-            # Tạo biểu đồ 2D
+
             # Tạo biểu đồ phân tán với các điểm dữ liệu được tô màu theo cụm
             plt.figure(figsize=(10, 6))
             scatter = plt.scatter(
