@@ -1,6 +1,7 @@
 import io
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.express as px
 import chardet
 import plotly.express as px
@@ -41,7 +42,10 @@ def input_file(data_file, n, radio_selection, df_cluster):
     if data_file is not None:
         df = data_file.dropna()
         st.dataframe(df)
-        selected_columns = st.multiselect('Lựa chọn dữ liệu phân cụm', df.columns.to_list())
+        selected_columns = st.multiselect('Lựa chọn dữ liệu phân cụm)', df.columns.to_list())
+        if len(selected_columns) >= 4:
+            st.error('Chỉ lựa chọn tối đa 3 cột dữ liệu để phân cụm.')
+            return
         selected_columns_list = list(selected_columns)
         if selected_columns:
             df_cluster = pd.DataFrame(df[selected_columns])
@@ -55,7 +59,6 @@ def input_file(data_file, n, radio_selection, df_cluster):
                 df_cluster = runKmean(df_cluster, n)
             else:
                 df_cluster = runDbScan(df_cluster)
-            df['Cluster'] = df_cluster['Cluster']
     return df_cluster
 
 def export_clustered_data():
@@ -168,7 +171,6 @@ def runDbScan(df_cluster):
     min_samples = st.slider('Chọn giá trị min_samples', min_value=1, max_value=200, value=5, step=1)
     dbscan = DBSCAN(eps=eps, min_samples=min_samples)
     clusters = dbscan.fit_predict(df_cluster)
-    df['Cluster'] = dbscan.labels_
     df_cluster['Cluster'] = dbscan.labels_
     plt.figure(figsize=(10, 6))
     plt.scatter(
@@ -214,13 +216,15 @@ def run():
     with st.sidebar:
         st.title('Menu')
         radio_selection = st.radio('Lựa chọn thuật toán', ['K-MEANS', 'DBSCAN'])
-    st.title('Các thuật toán học máy trong khai thác dữ liệu lớn và ứng dụng phân đoạn khách hàng')
+    st.title('Các thuật toán học máy trong khai thác dữ liệu lớn và ứng dụng phân cụm khách hàng')
     if radio_selection == 'K-MEANS':
         st.markdown("<h1 style='text-align: center;'>KMEAN CLUSTERING</h1>", unsafe_allow_html=True)
     else:
         st.markdown("<h1 style='text-align: center;'>DBSCAN CLUSTERING</h1>", unsafe_allow_html=True)
     df_cluster = input_file(data_file, n, radio_selection, df_cluster)
-    export_clustered_data()
+    if df_cluster is not None and 'Cluster' in df_cluster.columns:
+        df['Cluster'] = df_cluster['Cluster']
+        export_clustered_data()
 
 print('Running main func...')
 # running main func
