@@ -46,7 +46,7 @@ def input_file(data_file, n, radio_selection, df_cluster):
         st.write('Tổng quan dữ liệu:')
         st.dataframe(data_file.describe())
         df = data_file.dropna()
-        selected_columns = st.multiselect('Lựa chọn dữ liệu phân cụm)', df.columns.to_list())
+        selected_columns = st.multiselect('Lựa chọn dữ liệu phân cụm:', df.columns.to_list())
         if len(selected_columns) >= 4:
             st.error('Chỉ lựa chọn tối đa 3 cột dữ liệu để phân cụm.')
             return
@@ -180,7 +180,7 @@ def runDbScan(df_cluster):
     min_samples = st.slider('Chọn giá trị min_samples', min_value=1, max_value=200, value=5, step=1)
     dbscan = DBSCAN(eps=eps, min_samples=min_samples)
     clusters = dbscan.fit_predict(df_cluster)
-    df_cluster['Cluster'] = dbscan.labels_
+    df_cluster['Cluster'] = clusters
     plt.figure(figsize=(10, 6))
     plt.scatter(
         df_cluster.iloc[:, 0],
@@ -194,9 +194,24 @@ def runDbScan(df_cluster):
     st.write('Số lượng cụm:', n_clusters_)
     st.write('Số lượng điểm nhiễu:', n_noise_)
     plt.title('DBSCAN Clustering')
-    plt.xlabel('Feature 1')
-    plt.ylabel('Feature 2')
+    plt.xlabel(df_cluster.columns[0])
+    plt.ylabel(df_cluster.columns[1])
+    # Add cluster labels and noise label to the plot
+    for i, txt in enumerate(clusters):
+        if txt != -1:
+            plt.annotate(txt, (df_cluster.iloc[i, 0], df_cluster.iloc[i, 1]), fontsize=8, color='black')
+        else:
+            plt.annotate('Noise', (df_cluster.iloc[i, 0], df_cluster.iloc[i, 1]), fontsize=8, color='red')
     st.pyplot()
+    # Count the number of data points in each cluster, excluding noise points
+    cluster_counts = df_cluster['Cluster'].value_counts()
+    cluster_counts = cluster_counts[cluster_counts.index != -1]  # Exclude noise points
+    # Count the number of noise points
+    n_noise = list(clusters).count(-1)
+    st.write('Số lượng điểm nhiễu:', n_noise)
+    # Display the number of data points in each cluster
+    st.write('Số lượng điểm dữ liệu trong mỗi cụm:')
+    st.dataframe(cluster_counts)
     return df_cluster
 
 def Elbow(df_cluster):
