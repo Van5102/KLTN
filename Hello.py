@@ -10,6 +10,7 @@ from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 import plotly.graph_objs as go
+from sklearn.metrics import silhouette_score
 from streamlit.logger import get_logger
 
 
@@ -53,9 +54,9 @@ def input_file(data_file, n, radio_selection, df_cluster):
         if selected_columns:
             df_cluster = pd.DataFrame(df[selected_columns])
             st.dataframe(df_cluster)
-
-            Elbow(df_cluster)
+            # Elbow(df_cluster)
             if radio_selection == 'K-MEANS':
+                Elbow(df_cluster)
                 n = int(st.number_input('Nhập số cụm', min_value=2, key=int))
                 df_cluster = runKmean(df_cluster, n)
             else:
@@ -173,11 +174,20 @@ def runKmean(df_cluster, n):
     return df_cluster
 
 def runDbScan(df_cluster):
-    eps = st.slider('Chọn giá trị eps', min_value=0.1, max_value=10.0, value=0.5, step=0.1)
+    eps = st.slider('Chọn giá trị eps', min_value=0.1, max_value=100.0, value=0.5, step=0.1)
     min_samples = st.slider('Chọn giá trị min_samples', min_value=1, max_value=200, value=5, step=1)
     dbscan = DBSCAN(eps=eps, min_samples=min_samples)
     clusters = dbscan.fit_predict(df_cluster)
-    df_cluster['Cluster'] = clusters
+    # Calculate the number of clusters
+    num_clusters = len(set(clusters)) - (1 if -1 in clusters else 0)
+
+    # Calculate the silhouette score
+    silhouette_avg = silhouette_score(df_cluster, clusters)
+
+    # Print the evaluation metrics
+    st.write('Số lượng cụm:', num_clusters)
+    st.write('Điểm silhouette trung bình:', silhouette_avg)
+    df_cluster['Cluster'] = clusters 
     plt.figure(figsize=(10, 6))
     plt.scatter(
         df_cluster.iloc[:, 0],
@@ -186,19 +196,16 @@ def runDbScan(df_cluster):
         cmap='viridis',
         marker='o'
     )
-    n_clusters_ = len(set(clusters)) - (1 if -1 in clusters else 0)
-    n_noise_ = list(clusters).count(-1)
-    st.write('Số lượng cụm:', n_clusters_)
-    st.write('Số lượng điểm nhiễu:', n_noise_)
+    # Add labels for cluster names and noise
+    for i, txt in enumerate(clusters):
+        if txt == -1:
+            plt.annotate('', (df_cluster.iloc[i, 0], df_cluster.iloc[i, 1]))
+        else:
+            plt.annotate(f'{txt}', (df_cluster.iloc[i, 0], df_cluster.iloc[i, 1]))
     plt.title('DBSCAN Clustering')
     plt.xlabel(df_cluster.columns[0])
-    plt.ylabel(df_cluster.columns[1])
-    # Add cluster labels and noise label to the plot
-    for i, txt in enumerate(clusters):
-        if txt != -1:
-            plt.annotate(txt, (df_cluster.iloc[i, 0], df_cluster.iloc[i, 1]), fontsize=8, color='black')
-        else:
-            plt.annotate('Noise', (df_cluster.iloc[i, 0], df_cluster.iloc[i, 1]), fontsize=8, color='red')
+    plt.ylabel(df_cluster.columns[1]) 
+
     st.pyplot()
     # Count the number of data points in each cluster, excluding noise points
     cluster_counts = df_cluster['Cluster'].value_counts()
