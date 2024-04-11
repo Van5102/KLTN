@@ -40,8 +40,12 @@ def input_file(data_file, n, radio_selection, df_cluster):
     global selected_columns_list
     data_file = read_csv_with_file_uploader()
     if data_file is not None:
+        # df = data_file.dropna()
+        # st.dataframe(df)
+        st.dataframe(data_file)
+        st.write('Tổng quan dữ liệu:')
+        st.dataframe(data_file.describe())
         df = data_file.dropna()
-        st.dataframe(df)
         selected_columns = st.multiselect('Lựa chọn dữ liệu phân cụm)', df.columns.to_list())
         if len(selected_columns) >= 4:
             st.error('Chỉ lựa chọn tối đa 3 cột dữ liệu để phân cụm.')
@@ -84,6 +88,7 @@ def runKmean(df_cluster, n):
         clusters = kmeans.fit_predict(df_cluster)
         df_cluster['Cluster'] = kmeans.labels_
         centroids = kmeans.cluster_centers_
+        cluster_counts = df_cluster['Cluster'].value_counts()
         if len(selected_columns_list) > 2 :
             # Create a 3D scatter plot of the clusters
             fig = go.Figure()
@@ -139,10 +144,12 @@ def runKmean(df_cluster, n):
 
             # Display the figure in Streamlit
             st.plotly_chart(fig)
+            st.write('Số lượng điểm dữ liệu trong mỗi cụm:', cluster_counts)
         else:
+            # Tạo biểu đồ 2D
             # Tạo biểu đồ phân tán với các điểm dữ liệu được tô màu theo cụm
             plt.figure(figsize=(10, 6))
-            plt.scatter(
+            scatter = plt.scatter(
                 df_cluster.iloc[:, 0],
                 df_cluster.iloc[:, 1],
                 c=clusters,
@@ -151,7 +158,7 @@ def runKmean(df_cluster, n):
             )
             # Đánh dấu tâm cụm
             centers = kmeans.cluster_centers_
-            plt.scatter(
+            center_scatter = plt.scatter(
                 centers[:, 0],
                 centers[:, 1],
                 c='red',
@@ -159,11 +166,13 @@ def runKmean(df_cluster, n):
                 alpha=0.75,
                 marker='x'
             )
-            plt.title('KMEANS Clustering')
             plt.xlabel(selected_columns_list[0])
             plt.ylabel(selected_columns_list[1])
+            # Thêm chú thích cho biểu đồ phân cụm
+            plt.legend(*scatter.legend_elements(), title='Clusters')
             # Hiển thị biểu đồ trên Streamlit
             st.pyplot()
+            st.write('Số lượng điểm dữ liệu trong mỗi cụm:', cluster_counts)
     return df_cluster
 
 def runDbScan(df_cluster):
