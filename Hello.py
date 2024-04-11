@@ -7,12 +7,9 @@ import chardet
 import plotly.express as px
 from sklearn.cluster import KMeans
 from sklearn.cluster import DBSCAN
-from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 import plotly.graph_objs as go
-from sklearn.metrics import silhouette_score
 from streamlit.logger import get_logger
-
 
 LOGGER = get_logger(__name__)
 df_cluster = None
@@ -54,9 +51,8 @@ def input_file(data_file, n, radio_selection, df_cluster):
         if selected_columns:
             df_cluster = pd.DataFrame(df[selected_columns])
             st.dataframe(df_cluster)
-            # Elbow(df_cluster)
+            Elbow(df_cluster)
             if radio_selection == 'K-MEANS':
-                Elbow(df_cluster)
                 n = int(st.number_input('Nhập số cụm', min_value=2, key=int))
                 df_cluster = runKmean(df_cluster, n)
             else:
@@ -173,21 +169,15 @@ def runKmean(df_cluster, n):
             st.write('Số lượng điểm dữ liệu trong mỗi cụm:', cluster_counts)
     return df_cluster
 
+
 def runDbScan(df_cluster):
+    st.set_option('deprecation.showPyplotGlobalUse', False)
     eps = st.slider('Chọn giá trị eps', min_value=0.1, max_value=100.0, value=0.5, step=0.1)
     min_samples = st.slider('Chọn giá trị min_samples', min_value=1, max_value=200, value=5, step=1)
     dbscan = DBSCAN(eps=eps, min_samples=min_samples)
     clusters = dbscan.fit_predict(df_cluster)
-    # # Calculate the number of clusters
-    # num_clusters = len(set(clusters)) - (1 if -1 in clusters else 0)
-
-    # # Calculate the silhouette score
-    # silhouette_avg = silhouette_score(df_cluster, clusters)
-
-    # # Print the evaluation metrics
-    # st.write('Số lượng cụm:', num_clusters)
-    # st.write('Điểm silhouette trung bình:', silhouette_avg)
     df_cluster['Cluster'] = clusters 
+    # Tạo biểu đồ phân tán với các điểm dữ liệu được tô màu theo cụm
     plt.figure(figsize=(10, 6))
     plt.scatter(
         df_cluster.iloc[:, 0],
@@ -205,14 +195,7 @@ def runDbScan(df_cluster):
     plt.title('DBSCAN Clustering')
     plt.xlabel(df_cluster.columns[0])
     plt.ylabel(df_cluster.columns[1]) 
-    # st.pyplot()
-    # Calculate the number of clusters
-    num_clusters = len(set(clusters)) - (1 if -1 in clusters else 0)
-    # Calculate the silhouette score
-    silhouette_avg = silhouette_score(df_cluster, clusters)
-    # Print the evaluation metrics
-    st.write('Số lượng cụm:', num_clusters)
-    st.write('Điểm silhouette trung bình:', silhouette_avg)
+    st.pyplot()
     # Count the number of data points in each cluster, excluding noise points
     cluster_counts = df_cluster['Cluster'].value_counts()
     cluster_counts = cluster_counts[cluster_counts.index != -1]  # Exclude noise points
