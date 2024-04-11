@@ -178,15 +178,15 @@ def runDbScan(df_cluster):
     min_samples = st.slider('Chọn giá trị min_samples', min_value=1, max_value=200, value=5, step=1)
     dbscan = DBSCAN(eps=eps, min_samples=min_samples)
     clusters = dbscan.fit_predict(df_cluster)
-    # Calculate the number of clusters
-    num_clusters = len(set(clusters)) - (1 if -1 in clusters else 0)
+    # # Calculate the number of clusters
+    # num_clusters = len(set(clusters)) - (1 if -1 in clusters else 0)
 
-    # Calculate the silhouette score
-    silhouette_avg = silhouette_score(df_cluster, clusters)
+    # # Calculate the silhouette score
+    # silhouette_avg = silhouette_score(df_cluster, clusters)
 
-    # Print the evaluation metrics
-    st.write('Số lượng cụm:', num_clusters)
-    st.write('Điểm silhouette trung bình:', silhouette_avg)
+    # # Print the evaluation metrics
+    # st.write('Số lượng cụm:', num_clusters)
+    # st.write('Điểm silhouette trung bình:', silhouette_avg)
     df_cluster['Cluster'] = clusters 
     plt.figure(figsize=(10, 6))
     plt.scatter(
@@ -205,8 +205,14 @@ def runDbScan(df_cluster):
     plt.title('DBSCAN Clustering')
     plt.xlabel(df_cluster.columns[0])
     plt.ylabel(df_cluster.columns[1]) 
-
-    st.pyplot()
+    # st.pyplot()
+    # Calculate the number of clusters
+    num_clusters = len(set(clusters)) - (1 if -1 in clusters else 0)
+    # Calculate the silhouette score
+    silhouette_avg = silhouette_score(df_cluster, clusters)
+    # Print the evaluation metrics
+    st.write('Số lượng cụm:', num_clusters)
+    st.write('Điểm silhouette trung bình:', silhouette_avg)
     # Count the number of data points in each cluster, excluding noise points
     cluster_counts = df_cluster['Cluster'].value_counts()
     cluster_counts = cluster_counts[cluster_counts.index != -1]  # Exclude noise points
