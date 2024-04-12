@@ -169,16 +169,43 @@ def runKmean(df_cluster, n):
             st.write('Số lượng điểm dữ liệu trong mỗi cụm:', cluster_counts)
     return df_cluster
 
+# Dựa theo dữ liệu đầu vào, phân tích và đưa ra giá trị eps và min_samples tối ưu
+def find_optimal_eps_min_samples(df_cluster):
+    from sklearn.neighbors import NearestNeighbors
+    from kneed import KneeLocator
+
+    # Tìm số lượng hàng xóm gần nhất cho mỗi điểm dữ liệu
+    nearest_neighbors = NearestNeighbors(n_neighbors=2)
+    neighbors = nearest_neighbors.fit(df_cluster)
+    distances, indices = neighbors.kneighbors(df_cluster)
+    distances = np.sort(distances, axis=0)
+    distances = distances[:, 1]
+    # Tìm giá trị eps tối ưu
+    kneedle = KneeLocator(
+        range(1, len(distances) + 1), distances, curve='convex', direction='increasing'
+    )
+    eps = distances[kneedle.elbow]
+    # Tìm giá trị min_samples tối ưu
+    min_samples = 2 * df_cluster.shape[1]
+    st.write('Giá trị eps tối ưu:', eps)
+    st.write('Giá trị min_samples tối ưu:', min_samples)
+    return eps, min_samples
 
 def runDbScan(df_cluster):
-    st.set_option('deprecation.showPyplotGlobalUse', False)
-    eps = st.slider('Chọn giá trị eps', min_value=0.1, max_value=100.0, value=0.5, step=0.1)
-    min_samples = st.slider('Chọn giá trị min_samples', min_value=1, max_value=200, value=5, step=1)
+    radio_button = st.radio('Lựa chọn giá trị eps và min_samples', ['Tối ưu', 'Tự nhập'])
+    if radio_button == 'Tối ưu':
+        eps, min_samples = find_optimal_eps_min_samples(df_cluster)
+    else:
+        eps = st.slider('Chọn giá trị eps', min_value=0.1, max_value=100.0, value=0.1, step=0.1)
+        min_samples = st.slider('Chọn giá trị min_samples', min_value=1, max_value=200, value=5, step=1)
+    # eps = st.slider('Chọn giá trị eps', min_value=0.1, max_value=100.0, value=0.1, step=0.1)
+    # min_samples = st.slider('Chọn giá trị min_samples', min_value=1, max_value=200, value=5, step=1)
     dbscan = DBSCAN(eps=eps, min_samples=min_samples)
     clusters = dbscan.fit_predict(df_cluster)
     df_cluster['Cluster'] = clusters 
+    st.set_option('deprecation.showPyplotGlobalUse', False)
     # Tạo biểu đồ phân tán với các điểm dữ liệu được tô màu theo cụm
-    plt.figure(figsize=(10, 6))
+    fig = plt.figure(figsize=(10, 6))
     plt.scatter(
         df_cluster.iloc[:, 0],
         df_cluster.iloc[:, 1],
@@ -195,7 +222,7 @@ def runDbScan(df_cluster):
     plt.title('DBSCAN Clustering')
     plt.xlabel(df_cluster.columns[0])
     plt.ylabel(df_cluster.columns[1]) 
-    st.pyplot()
+    st.pyplot(fig)
     # Count the number of data points in each cluster, excluding noise points
     cluster_counts = df_cluster['Cluster'].value_counts()
     cluster_counts = cluster_counts[cluster_counts.index != -1]  # Exclude noise points
@@ -216,13 +243,12 @@ def Elbow(df_cluster):
         wcss.append(kmeans.inertia_)
     # Plot the elbow graph
     st.set_option('deprecation.showPyplotGlobalUse', False)  # To avoid deprecation warning
-    plt.figure(figsize=(10, 5))
-    plt.plot(range(1, 11), wcss, marker='o', linestyle='--')
-    plt.title('Elbow Method')
-    plt.xlabel('Number of clusters')
-    plt.ylabel('WCSS')
-    st.pyplot()
-
+    fig, ax = plt.subplots(figsize=(10, 5))  # Create a new figure with a defined axis
+    ax.plot(range(1, 11), wcss, marker='o', linestyle='--')
+    ax.set_title('Elbow Method')
+    ax.set_xlabel('Number of clusters')
+    ax.set_ylabel('WCSS')
+    st.pyplot(fig)
 def run():
     global df_cluster
     st.set_page_config(
