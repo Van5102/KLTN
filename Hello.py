@@ -10,6 +10,7 @@ from sklearn.cluster import DBSCAN
 import matplotlib.pyplot as plt
 import plotly.graph_objs as go
 from streamlit.logger import get_logger
+from sklearn.preprocessing import StandardScaler
 
 LOGGER = get_logger(__name__)
 df_cluster = None
@@ -32,6 +33,9 @@ def read_csv_with_file_uploader():
         df = pd.read_csv(stringio)
         return df
 
+def scale_data(df):
+    scaler = StandardScaler()
+    return scaler.fit_transform(df)
 
 def input_file(data_file, n, radio_selection, df_cluster):
     global df
@@ -40,16 +44,17 @@ def input_file(data_file, n, radio_selection, df_cluster):
     if data_file is not None:
         df = data_file.dropna()
         st.dataframe(data_file)
+        st.write('Loại bỏ các giá trị Nan:')
+        st.dataframe(df)
         st.write('Tổng quan dữ liệu:')
         st.dataframe(data_file.describe())
-
         selected_columns = st.multiselect('Lựa chọn dữ liệu phân cụm:', df.columns.to_list())
         if len(selected_columns) >= 4:
             st.error('Chỉ lựa chọn tối đa 3 cột dữ liệu để phân cụm.')
             return
         selected_columns_list = list(selected_columns)
         if selected_columns:
-            df_cluster = pd.DataFrame(df[selected_columns])
+            df_cluster = pd.DataFrame(df[selected_columns_list])
             st.dataframe(df_cluster)
             Elbow(df_cluster)
             if radio_selection == 'K-MEANS':
@@ -219,6 +224,7 @@ def runDbScan(df_cluster):
             plt.annotate('', (df_cluster.iloc[i, 0], df_cluster.iloc[i, 1]))
         else:
             plt.annotate(f'{txt}', (df_cluster.iloc[i, 0], df_cluster.iloc[i, 1]))
+    
     plt.title('DBSCAN Clustering')
     plt.xlabel(df_cluster.columns[0])
     plt.ylabel(df_cluster.columns[1]) 
