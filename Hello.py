@@ -43,8 +43,9 @@ def input_file(data_file, n, radio_selection, df_cluster):
     data_file = read_csv_with_file_uploader()
     if data_file is not None:
         df = data_file.dropna()
+        df = df.head(2000)
         st.dataframe(data_file)
-        st.write('Loại bỏ các giá trị Nan:')
+        st.write('Loại bỏ các giá trị Null:')
         st.dataframe(df)
         st.write('Tổng quan dữ liệu:')
         st.dataframe(data_file.describe())
