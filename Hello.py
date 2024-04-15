@@ -266,7 +266,7 @@ def run():
     with st.sidebar:
         st.title('Menu')
         radio_selection = st.radio('Lựa chọn thuật toán', ['K-MEANS', 'DBSCAN'])
-    st.title('Các thuật toán học máy trong khai thác dữ liệu lớn và ứng dụng phân cụm khách hàng')
+    st.title('Các thuật toán học máy trong khai thác dữ liệu lớn và ứng dụng phân loại khách hàng')
     if radio_selection == 'K-MEANS':
         st.markdown("<h1 style='text-align: center;'>KMEAN CLUSTERING</h1>", unsafe_allow_html=True)
     else:
