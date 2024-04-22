@@ -10,7 +10,6 @@ from sklearn.cluster import DBSCAN
 import matplotlib.pyplot as plt
 import plotly.graph_objs as go
 from streamlit.logger import get_logger
-from sklearn.preprocessing import StandardScaler
 
 LOGGER = get_logger(__name__)
 df_cluster = None
@@ -20,7 +19,6 @@ radio_selection = None
 n = 1
 
 def read_csv_with_file_uploader():
-    # Create a file uploader widget
     uploaded_file = st.file_uploader("Upload your CSV file", type=['csv'])
     if uploaded_file is not None:
         # To read file as bytes:
@@ -32,10 +30,6 @@ def read_csv_with_file_uploader():
         # To read file as string (assuming it's a CSV file):
         df = pd.read_csv(stringio)
         return df
-
-def scale_data(df):
-    scaler = StandardScaler()
-    return scaler.fit_transform(df)
 
 def input_file(data_file, n, radio_selection, df_cluster):
     global df
@@ -92,10 +86,8 @@ def runKmean(df_cluster, n):
         if len(selected_columns_list) > 2 :
             # Create a 3D scatter plot of the clusters
             fig = go.Figure()
-
             # Define a color palette for the clusters
             colors = px.colors.qualitative.Plotly
-
             # Add scatter plot for clusters
             for i in range(n):
                 cluster_df = df_cluster[df_cluster['Cluster'] == i]
@@ -107,7 +99,6 @@ def runKmean(df_cluster, n):
                     marker=dict(size=3, color=colors[i % len(colors)]),
                     name=f'Cluster {i}'
                 ))
-
                 # Add lines from centroid to each point in the cluster
                 for _, row in cluster_df.iterrows():
                     fig.add_trace(go.Scatter3d(
@@ -198,18 +189,17 @@ def find_optimal_eps_min_samples(df_cluster):
     return eps, min_samples
 
 def runDbScan(df_cluster):
+    global selected_columns_list
     radio_button = st.radio('Lựa chọn giá trị eps và min_samples', ['Tối ưu', 'Tự nhập'])
     if radio_button == 'Tối ưu':
         eps, min_samples = find_optimal_eps_min_samples(df_cluster)
     else:
         eps = st.slider('Chọn giá trị eps', min_value=0.1, max_value=100.0, value=0.1, step=0.1)
         min_samples = st.slider('Chọn giá trị min_samples', min_value=1, max_value=200, value=5, step=1)
-    # eps = st.slider('Chọn giá trị eps', min_value=0.1, max_value=100.0, value=0.1, step=0.1)
-    # min_samples = st.slider('Chọn giá trị min_samples', min_value=1, max_value=200, value=5, step=1)
     dbscan = DBSCAN(eps=eps, min_samples=min_samples)
     clusters = dbscan.fit_predict(df_cluster)
     df_cluster['Cluster'] = clusters 
-    st.set_option('deprecation.showPyplotGlobalUse', False)
+    st.set_option('deprecation.showPyplotGlobalUse', False) 
     # Tạo biểu đồ phân tán với các điểm dữ liệu được tô màu theo cụm
     fig = plt.figure(figsize=(10, 6))
     plt.scatter(
@@ -235,6 +225,7 @@ def runDbScan(df_cluster):
     cluster_counts = cluster_counts[cluster_counts.index != -1]  # Exclude noise points
     # Count the number of noise points
     n_noise = list(clusters).count(-1)
+    st.write('Số lượng cụm:', len(cluster_counts))
     st.write('Số lượng điểm nhiễu:', n_noise)
     # Display the number of data points in each cluster
     st.write('Số lượng điểm dữ liệu trong mỗi cụm:')
@@ -280,3 +271,4 @@ print('Running main func...')
 # running main func
 if __name__ == '__main__':
     run()
+   
